@@ -1,7 +1,7 @@
 # AI Lab 2: Games and ConnectFour 
 
-# Name(s): 
-# Email(s): 
+# Name(s): Sebastian Wittrock and Miguel Roberts
+# Email(s):
 
 from game_api import *
 from boards import *
