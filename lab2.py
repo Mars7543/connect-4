@@ -15,14 +15,39 @@ INF = float('inf')
 
 #### Part 1: Utility Functions #################################################
 
-def is_game_over_connectfour(board):
+def is_game_over_connectfour(board=None):
     """Returns True if game is over, otherwise False."""
-    raise NotImplementedError 
+
+    if board == None: # if board doesn't exist throw an exception
+        raise Exception('Board Not Defined')
+
+    chains = board.get_all_chains() # get all chains
+
+    for chain in chains: # return true if any chain >= 4
+        if len(chain) >= 4:
+            return True
+
+    all_columns_full = True  # assume all columns are full and change the val if any aren't
+    for col in range(7):
+        if not board.is_column_full(col):
+            all_columns_full = False
+
+    return True if all_columns_full else False # if all columns are full return true else false
 
 def next_boards_connectfour(board):
     """Returns a list of ConnectFourBoard objects that could result from the
     next move, or an empty list if no moves can be made."""
-    raise NotImplementedError
+
+    next_boards = []
+
+    if is_game_over_connectfour():
+        return next_boards
+
+    for col in range(len(7)):
+        if not board.is_column_full(col):
+            next_boards.append(board.add_piece(col))
+
+    return next_boards
 
 def endgame_score_connectfour(board, is_current_player_maximizer):
     """Given an endgame board, returns 1000 if the maximizer has won,
