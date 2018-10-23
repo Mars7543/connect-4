@@ -17,13 +17,12 @@ INF = float('inf')
 
 def is_game_over_connectfour(board=None):
     """Returns True if game is over, otherwise False."""
-
-    if board == None: # if board doesn't exist throw an exception
+    if board == None:  # if board doesn't exist throw an exception
         raise Exception('Board Not Defined')
 
-    chains = board.get_all_chains() # get all chains
+    chains = board.get_all_chains()  # get all chains
 
-    for chain in chains: # return true if any chain >= 4
+    for chain in chains:  # return true if any chain >= 4
         if len(chain) >= 4:
             return True
 
@@ -32,7 +31,7 @@ def is_game_over_connectfour(board=None):
         if not board.is_column_full(col):
             all_columns_full = False
 
-    return True if all_columns_full else False # if all columns are full return true else false
+    return True if all_columns_full else False  # if all columns are full return true else false
 
 def next_boards_connectfour(board):
     """Returns a list of ConnectFourBoard objects that could result from the
@@ -49,10 +48,19 @@ def next_boards_connectfour(board):
 
     return next_boards
 
+
 def endgame_score_connectfour(board, is_current_player_maximizer):
     """Given an endgame board, returns 1000 if the maximizer has won,
     -1000 if the minimizer has won, or 0 in case of a tie."""
-    raise NotImplementedError
+    chains = board.get_all_chains()
+    for chain in chains:
+        if chain.length == 4:
+            if is_current_player_maximizer:
+                return 1000
+            else:
+                return 1000
+
+    return 0
 
 
 def endgame_score_connectfour_faster(board, is_current_player_maximizer):
