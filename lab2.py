@@ -20,22 +20,33 @@ def is_game_over_connectfour(board=None):
     if board == None:  # if board doesn't exist throw an exception
         raise Exception('Board Not Defined')
 
-    chains = board.get_all_chains()  # get all chains
+    """
+    - Loop through every chain and check if a player won (len(chain) >= 4)
+    - Check if every column is full
+    """
 
-    for chain in chains:  # return true if any chain >= 4
+    chains = board.get_all_chains()
+
+    for chain in chains:
         if len(chain) >= 4:
             return True
 
-    all_columns_full = True  # assume all columns are full and change the val if any aren't
+    all_columns_full = True
     for col in range(7):
         if not board.is_column_full(col):
             all_columns_full = False
 
-    return True if all_columns_full else False  # if all columns are full return true else false
+    return True if all_columns_full else False
 
 def next_boards_connectfour(board):
     """Returns a list of ConnectFourBoard objects that could result from the
     next move, or an empty list if no moves can be made."""
+
+    """
+    If the game isn't over:
+        Loop through each column and if it isn't full:
+            add a piece to the column and append the new board to the list of "next boards"  
+    """
 
     next_boards = []
 
@@ -53,34 +64,61 @@ def endgame_score_connectfour(board, is_current_player_maximizer):
     """Given an endgame board, returns 1000 if the maximizer has won,
     -1000 if the minimizer has won, or 0 in case of a tie."""
     if not is_game_over_connectfour(board):
-        raise Exception("Game not over") #Error if game is not over
+        raise Exception("Game not over") # Error if game is not over
+
+    """ 
+    1) Loop through every chain to find the winning chain (len(chain) >= 4)
+        * the last player was the winning player * therefore
+    
+        if the current player is the maximizer:
+            then return -1000 because the minimizer won 
+            
+        else if the current player is the minimizer:
+            return 1000 because the maximizer won
+        
+        else return 0 - tie
+    """
 
     chains = board.get_all_chains()
-    for chain in chains: #get every chain within the board
-        if chain.length == 4: #find the winning chain
+    for chain in chains:
+        if len(chain) >= 4:
             if is_current_player_maximizer:
-                return -1000 #return -1000 since the minimizer was the last player
+                return -1000
             else:
-                return 1000 #return 1000 since the maximizer was the last player
+                return 1000
 
-    return 0 #return 0 in the case of a tie
+    return 0
 
 
 def endgame_score_connectfour_faster(board, is_current_player_maximizer):
     """Given an endgame board, returns an endgame score with abs(score) >= 1000,
     returning larger absolute scores for winning sooner."""
-    maxPoints = 1105
-    #maxPoints is the maximum amount of points a player can get (mutiplied max number of moves by one player, 21, by 5 points)
-    chains = board.get_all_chains()
-    for chain in chains: #get every chain
-        if chain.length == 4: #find winning chain
-            numPieces = board.count_pieces(not is_current_player_maximizer) #count pieces of the winner
-            leftOver = numPieces - 4 #find how many extra moves they did other than the necessary moves needed to win
-            for i in range(0,leftOver):
-                maxPoints = maxPoints - 5 #subtract 5 points for every extra move
 
-            return maxPoints #return their points
-    return 0 #return 0 in the case of a tie
+    """
+    The maximum number of moves a player can make is 21 ((6 rows * 7 cols) / (2 players))
+    A player will lose 5 points per move made (not including the necessary 4 needed to win)
+        Lower # of moves = greater points
+    Maximum Points = 1000 (minimum) + 85 (maximimum # of moves needed * 5 points per move)
+    """
+    maxPoints = 1085
+
+    """
+    Find the winning chain and count the # of moves made - the 4 necessary moves
+    Subtract 5 * # of excess moves from max score
+    """
+
+    chains = board.get_all_chains()
+    for chain in chains: # get every chain
+        if len(chain) >= 4: # find winning chain
+            numPieces = board.count_pieces(not is_current_player_maximizer) # count pieces of the winner
+            leftOver = numPieces - 4 # find how many extra moves they did other than the necessary moves needed to win
+            for i in range(0,leftOver):
+                maxPoints = maxPoints - 5 # subtract 5 points for every extra move
+
+            return maxPoints
+    return 0
+
+
 # Now we can create AbstractGameState objects for Connect Four, using some of
 # the functions you implemented above.  You can use the following examples to
 # test your dfs and minimax implementations in Part 2.
