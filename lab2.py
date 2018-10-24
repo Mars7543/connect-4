@@ -53,33 +53,34 @@ def endgame_score_connectfour(board, is_current_player_maximizer):
     """Given an endgame board, returns 1000 if the maximizer has won,
     -1000 if the minimizer has won, or 0 in case of a tie."""
     if not is_game_over_connectfour(board):
-        raise Exception("Game not over")
+        raise Exception("Game not over") #Error if game is not over
 
     chains = board.get_all_chains()
-    for chain in chains:
-        if chain.length == 4:
+    for chain in chains: #get every chain within the board
+        if chain.length == 4: #find the winning chain
             if is_current_player_maximizer:
-                return -1000
+                return -1000 #return -1000 since the minimizer was the last player
             else:
-                return 1000
+                return 1000 #return 1000 since the maximizer was the last player
 
-    return 0
+    return 0 #return 0 in the case of a tie
 
 
 def endgame_score_connectfour_faster(board, is_current_player_maximizer):
     """Given an endgame board, returns an endgame score with abs(score) >= 1000,
     returning larger absolute scores for winning sooner."""
-    maxPoints = 1100
+    maxPoints = 1105
+    #maxPoints is the maximum amount of points a player can get (mutiplied max number of moves by one player, 21, by 5 points)
     chains = board.get_all_chains()
-    for chain in chains:
-        if chain.length == 4:
-            numPieces = board.count_pieces(not is_current_player_maximizer)
-            leftOver = numPieces - 4
+    for chain in chains: #get every chain
+        if chain.length == 4: #find winning chain
+            numPieces = board.count_pieces(not is_current_player_maximizer) #count pieces of the winner
+            leftOver = numPieces - 4 #find how many extra moves they did other than the necessary moves needed to win
             for i in range(0,leftOver):
-                maxPoints = maxPoints - 5
+                maxPoints = maxPoints - 5 #subtract 5 points for every extra move
 
-            return maxPoints
-    return 0
+            return maxPoints #return their points
+    return 0 #return 0 in the case of a tie
 # Now we can create AbstractGameState objects for Connect Four, using some of
 # the functions you implemented above.  You can use the following examples to
 # test your dfs and minimax implementations in Part 2.
