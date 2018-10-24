@@ -52,11 +52,14 @@ def next_boards_connectfour(board):
 def endgame_score_connectfour(board, is_current_player_maximizer):
     """Given an endgame board, returns 1000 if the maximizer has won,
     -1000 if the minimizer has won, or 0 in case of a tie."""
+    if not is_game_over_connectfour(board):
+        raise Exception("Game not over")
+
     chains = board.get_all_chains()
     for chain in chains:
         if chain.length == 4:
             if is_current_player_maximizer:
-                return 1000
+                return -1000
             else:
                 return 1000
 
@@ -66,8 +69,17 @@ def endgame_score_connectfour(board, is_current_player_maximizer):
 def endgame_score_connectfour_faster(board, is_current_player_maximizer):
     """Given an endgame board, returns an endgame score with abs(score) >= 1000,
     returning larger absolute scores for winning sooner."""
-    raise NotImplementedError
+    maxPoints = 1100
+    chains = board.get_all_chains()
+    for chain in chains:
+        if chain.length == 4:
+            numPieces = board.count_pieces(not is_current_player_maximizer)
+            leftOver = numPieces - 4
+            for i in range(0,leftOver):
+                maxPoints = maxPoints - 5
 
+            return maxPoints
+    return 0
 # Now we can create AbstractGameState objects for Connect Four, using some of
 # the functions you implemented above.  You can use the following examples to
 # test your dfs and minimax implementations in Part 2.
