@@ -17,7 +17,7 @@ INF = float('inf')
 
 def is_game_over_connectfour(board=None):
     """Returns True if game is over, otherwise False."""
-    if board == None:  # if board doesn't exist throw an exception
+    if not board:  # if board doesn't exist throw an exception
         raise Exception('Board Not Defined')
 
     """
@@ -50,10 +50,10 @@ def next_boards_connectfour(board):
 
     next_boards = []
 
-    if is_game_over_connectfour():
+    if is_game_over_connectfour(board):
         return next_boards
 
-    for col in range(len(7)):
+    for col in range(7):
         if not board.is_column_full(col):
             next_boards.append(board.add_piece(col))
 
@@ -146,19 +146,89 @@ state_UHOH = AbstractGameState(snapshot = BOARD_UHOH,
 
 # Note: Functions in Part 2 use the AbstractGameState API, not ConnectFourBoard.
 
+# min and max use index 0 b/c a tuple is being passed in with the format (score, state) to preserve states
+def min(x, y):
+    return x if x[0] <= y[0] else y
+
+
+def max(x, y):
+    return x if x[0] >= y[0] else y
+
+
+static_evaluations = 0
+
+
+def minimax(state, maximize, dfs_maximizing=False):
+
+    # if game is over return a tuple with the score, current state
+    if state.is_game_over():
+        global static_evaluations
+        static_evaluations += 1
+
+        return state.get_endgame_score(maximize), state
+
+    # array of next states for maxmize and minimize
+    children = state.generate_next_states()
+
+    """ 
+    (Min/Max)imize use tuples with the format: 
+       (score, state) to preserve the best state
+    """
+
+    # if dfs_maximizing always put True for maximize arg
+    if dfs_maximizing:
+        maxEval = (-INF, '', '')
+
+        for child in children:
+            eval = minimax(child, True, True)
+            maxEval = max(maxEval, eval)
+
+        return maxEval
+
+    elif maximize:
+        maxEval = (-INF, '', '')
+
+        for child in children:
+            eval = minimax(child, False)
+            maxEval = max(maxEval, eval)
+
+        return maxEval
+
+    else:
+        minEval = (INF, '', '')
+
+        for child in children:
+            eval = minimax(child, True)
+            minEval = min(minEval, eval)
+
+        return minEval
+
 def dfs_maximizing(state) :
     """Performs depth-first search to find path with highest endgame score.
     Returns a tuple containing:
      0. the best path (a list of AbstractGameState objects),
      1. the score of the leaf node (a number), and
      2. the number of static evaluations performed (a number)"""
-    raise NotImplementedError
+
+    global static_evaluations
+    static_evaluations = 0
+
+    score, state = minimax(state, True, True)
+
+    path = []
+
+    while state:
+        path.insert(0, state)
+        state = state.get_previous_move()
+
+    return path, score, static_evaluations
 
 
 # Uncomment the line below to try your dfs_maximizing on an
 # AbstractGameState representing the games tree "GAME1" from toytree.py:
 
 # pretty_print_dfs_type(dfs_maximizing(GAME1))
+
 
 def minimax_endgame_search(state, maximize=True) :
     """Performs minimax search, searching all leaf nodes and statically
@@ -167,12 +237,24 @@ def minimax_endgame_search(state, maximize=True) :
      0. the best path (a list of AbstractGameState objects),
      1. the score of the leaf node (a number), and
      2. the number of static evaluations performed (a number)"""
-    raise NotImplementedError
+
+    global static_evaluations
+    static_evaluations = 0
+
+    score, state = minimax(state, maximize)
+
+    path = []
+
+    while state:
+        path.insert(0, state)
+        state = state.get_previous_move()
+
+    return path, score, static_evaluations
 
 # Uncomment the line below to try your minimax_endgame_search on an
 # AbstractGameState representing the ConnectFourBoard "NEARLY_OVER" from boards.py:
 
-# pretty_print_dfs_type(minimax_endgame_search(state_NEARLY_OVER))
+pretty_print_dfs_type(minimax_endgame_search(state_NEARLY_OVER))
 
 
 #### Part 3: Cutting off and Pruning search #############################################
