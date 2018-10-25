@@ -158,14 +158,16 @@ def max(x, y):
 static_evaluations = 0
 
 
-def minimax(state, maximize, dfs_maximizing=False):
+def minimax(state, maximize, path=[], dfs_maximizing=False):
 
     # if game is over return a tuple with the score, current state
     if state.is_game_over():
         global static_evaluations
         static_evaluations += 1
 
-        return state.get_endgame_score(maximize), state
+        path.append(state)
+
+        return state.get_endgame_score(maximize), state, path
 
     # array of next states for maxmize and minimize
     children = state.generate_next_states()
@@ -180,7 +182,7 @@ def minimax(state, maximize, dfs_maximizing=False):
         maxEval = (-INF, '', '')
 
         for child in children:
-            eval = minimax(child, True, True)
+            eval = minimax(child, True, path, True)
             maxEval = max(maxEval, eval)
 
         return maxEval
@@ -189,7 +191,7 @@ def minimax(state, maximize, dfs_maximizing=False):
         maxEval = (-INF, '', '')
 
         for child in children:
-            eval = minimax(child, False)
+            eval = minimax(child, False, path)
             maxEval = max(maxEval, eval)
 
         return maxEval
@@ -198,7 +200,7 @@ def minimax(state, maximize, dfs_maximizing=False):
         minEval = (INF, '', '')
 
         for child in children:
-            eval = minimax(child, True)
+            eval = minimax(child, True, path)
             minEval = min(minEval, eval)
 
         return minEval
@@ -213,13 +215,7 @@ def dfs_maximizing(state) :
     global static_evaluations
     static_evaluations = 0
 
-    score, state = minimax(state, True, True)
-
-    path = []
-
-    while state:
-        path.insert(0, state)
-        state = state.get_previous_move()
+    score, state, path = minimax(state=state, maximize=True, path=[], dfs_maximizing=True)
 
     return path, score, static_evaluations
 
@@ -241,13 +237,7 @@ def minimax_endgame_search(state, maximize=True) :
     global static_evaluations
     static_evaluations = 0
 
-    score, state = minimax(state, maximize)
-
-    path = []
-
-    while state:
-        path.insert(0, state)
-        state = state.get_previous_move()
+    score, state, path = minimax(state=state, maximize=maximize)
 
     return path, score, static_evaluations
 

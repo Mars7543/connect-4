@@ -41,11 +41,6 @@ class AbstractGameState :
     def generate_next_states(self) :
         return list(map(self.wrap, self.generate_next_states_fn(self.snapshot)))
 
-    def get_previous_move(self):
-        prev_move = self.snapshot.get_previous_move()
-        if prev_move:
-            return AbstractGameState(prev_move, self.is_game_over_fn, self.generate_next_states_fn, self.endgame_score_fn)
-
     def describe_previous_move(self) :
         return self.snapshot.describe_previous_move()
 
@@ -75,7 +70,6 @@ class ConnectFourBoard :
         if not board_array :
             board_array = [[0 for c in range(ConnectFourBoard.num_cols)] for r in range(ConnectFourBoard.num_rows)]
         self.board_array = [ [x if x is not 0 else None for x in row] for row in board_array]
-        self.prev_move = None
         self.prev_move_string = 'none'
         self.players = players[:]
         self.whose_turn = whose_turn if whose_turn in players else players[0]
@@ -142,15 +136,11 @@ class ConnectFourBoard :
         new_board = self.copy()
         height = 1 + new_board.get_column_height(col_number)
         new_board.board_array[-height][col_number] = piece_type
-        new_board.prev_move = self
         new_board.prev_move_string = ("Put " + str(player)
                                       + "'s piece in col " + str(col_number))
         # adding a piece causes the current player to swap
         new_board.set_current_player_name(new_board.players[1])
         return new_board
-
-    def get_previous_move(self):
-        return self.prev_move
 
     def describe_previous_move(self) :
         "Returns a string describing the most recent move leading to current state"
