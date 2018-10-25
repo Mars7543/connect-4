@@ -254,7 +254,7 @@ def minimax_endgame_search(state, maximize=True) :
 # Uncomment the line below to try your minimax_endgame_search on an
 # AbstractGameState representing the ConnectFourBoard "NEARLY_OVER" from boards.py:
 
-pretty_print_dfs_type(minimax_endgame_search(state_NEARLY_OVER))
+# pretty_print_dfs_type(minimax_endgame_search(state_NEARLY_OVER))
 
 
 #### Part 3: Cutting off and Pruning search #############################################
