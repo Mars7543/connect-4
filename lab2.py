@@ -169,7 +169,7 @@ def minimax(state, maximize, path=[], dfs_maximizing=False):
 
         return state.get_endgame_score(maximize), state, path
 
-    # array of next states for maxmize and minimize
+    # array of next states for maximize and minimize
     children = state.generate_next_states()
 
     """ 
