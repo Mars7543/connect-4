@@ -156,18 +156,28 @@ def max(x, y):
 
 
 static_evaluations = 0
+current_depth = 0
 
+def minimax(state, maximize, path=[], dfs_maximizing=False, max_depth=INF, heuristic_fn=None):
 
-def minimax(state, maximize, path=[], dfs_maximizing=False):
+    path = path.copy()
 
     # if game is over return a tuple with the score, current state
-    if state.is_game_over():
+    if state.is_game_over() or current_depth == max_depth:
         global static_evaluations
         static_evaluations += 1
 
-        path.append(state)
+        global current_depth
+        current_depth += 1
 
-        return state.get_endgame_score(maximize), state, path
+        # add state to path
+        path.insert(0, state)
+
+        # if a heuristic function is given use it, if not use endgame score function
+        evalutation = heuristic_fn(state) if heuristic_fn else state.get_endgame_score(maximize)
+
+        # return a tuple of the static evaluation, current state and a path to the state
+        return evalutation, state, path
 
     # array of next states for maximize and minimize
     children = state.generate_next_states()
@@ -177,31 +187,26 @@ def minimax(state, maximize, path=[], dfs_maximizing=False):
        (score, state) to preserve the best state
     """
 
-    # if dfs_maximizing always put True for maximize arg
-    if dfs_maximizing:
-        maxEval = (-INF, '', '')
-
-        for child in children:
-            eval = minimax(child, True, path, True)
-            maxEval = max(maxEval, eval)
-
-        return maxEval
-
-    elif maximize:
+    # if dfs_maximizing: it is always maximizing
+    if dfs_maximizing or maximize:
         maxEval = (-INF, '', '')
 
         for child in children:
             eval = minimax(child, False, path)
             maxEval = max(maxEval, eval)
 
+        maxEval[2].insert(0, state)
+
         return maxEval
 
     else:
-        minEval = (INF, '', '')
+        minEval = (INF, '', [])
 
         for child in children:
             eval = minimax(child, True, path)
             minEval = min(minEval, eval)
+
+        minEval[2].insert(0, state)
 
         return minEval
 
@@ -244,17 +249,16 @@ def minimax_endgame_search(state, maximize=True) :
 # Uncomment the line below to try your minimax_endgame_search on an
 # AbstractGameState representing the ConnectFourBoard "NEARLY_OVER" from boards.py:
 
-# pretty_print_dfs_type(minimax_endgame_search(state_NEARLY_OVER))
+pretty_print_dfs_type(minimax_endgame_search(state_NEARLY_OVER))
 
 
 #### Part 3: Cutting off and Pruning search #############################################
-
 
 def heuristic_connectfour(board, is_current_player_maximizer):
     """Given a non-endgame board, returns a heuristic score with
     abs(score) < 1000, where higher numbers indicate that the board is better
     for the maximizer."""
-    raise NotImplementedError
+    return always_zero(board, is_current_player_maximizer)
     
 
 ## Note that the signature of heuristic_fn is heuristic_fn(board, maximize=True)
@@ -266,7 +270,17 @@ def minimax_search(state, heuristic_fn=always_zero, depth_limit=INF, maximize=Tr
      0. the best path (a list of AbstractGameState objects),
      1. the score of the leaf node (a number), and
      2. the number of static evaluations performed (a number)"""
-    raise NotImplementedError
+
+    global static_evaluations
+    static_evaluations = 0
+
+    global current_depth
+    current_depth = 0
+
+    score, state, path = minimax(state=state, maximize=maximize, max_depth=depth_limit, heuristic_fn=heuristic_fn)
+
+    return path, score, static_evaluations
+
 
 # Uncomment the line below to try minimax_search with "BOARD_UHOH" and
 # depth_limit=1. Try increasing the value of depth_limit to see what happens:
@@ -314,9 +328,6 @@ TEST_PROGRESSIVE_DEEPENING = True
 if not TEST_PROGRESSIVE_DEEPENING:
     def not_implemented(*args): raise NotImplementedError
     progressive_deepening = not_implemented
-
-
-
 
 #
 # If you want to enter the tournament, implement your final contestant 
