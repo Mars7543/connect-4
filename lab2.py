@@ -1,6 +1,6 @@
 # AI Lab 2: Games and ConnectFour 
 
-# Name(s): Sebastian Wittrock     and   Miguel Roberts
+# Name(s):  Sebastian Wittrock    and   Miguel Roberts
 # Email(s): sebwit20@bergen.org   and   migrob20@bergen.org
 
 from game_api import *
@@ -154,30 +154,44 @@ def min(x, y):
 def max(x, y):
     return x if x[0] >= y[0] else y
 
-
 static_evaluations = 0
 current_depth = 0
 
-def minimax(state, maximize, path=[], dfs_maximizing=False, max_depth=INF, heuristic_fn=None):
+def minimax(state, maximize, path=[], dfs_maximizing=False, max_depth=INF, heuristic_fn=None, alpha=(-INF, '', ''), beta=(INF, '', '')):
+    global current_depth
+    global static_evaluations
 
     path = path.copy()
 
     # if game is over return a tuple with the score, current state
-    if state.is_game_over() or current_depth == max_depth:
-        global static_evaluations
+    if state.is_game_over():
         static_evaluations += 1
 
-        global current_depth
         current_depth += 1
 
         # add state to path
         path.insert(0, state)
 
         # if a heuristic function is given use it, if not use endgame score function
-        evalutation = heuristic_fn(state) if heuristic_fn else state.get_endgame_score(maximize)
+        evalutation = state.get_endgame_score()
 
         # return a tuple of the static evaluation, current state and a path to the state
         return evalutation, state, path
+
+    elif current_depth == max_depth:
+        static_evaluations += 1
+
+        current_depth += 1
+
+        # add state to path
+        path.insert(0, state)
+
+        # if a heuristic function is given use it, if not use endgame score function
+        evalutation = heuristic_fn(state.get_snapshot(), maximize)
+
+        # return a tuple of the static evaluation, current state and a path to the state
+        return evalutation, state, path
+
 
     # array of next states for maximize and minimize
     children = state.generate_next_states()
@@ -192,8 +206,12 @@ def minimax(state, maximize, path=[], dfs_maximizing=False, max_depth=INF, heuri
         maxEval = (-INF, '', '')
 
         for child in children:
-            eval = minimax(child, False, path)
+            eval = minimax(child, False, path, dfs_maximizing, max_depth, heuristic_fn, alpha, beta)
             maxEval = max(maxEval, eval)
+
+            alpha = max(alpha, eval)
+            if beta[0] <= alpha[0]:
+                break
 
         maxEval[2].insert(0, state)
 
@@ -203,8 +221,13 @@ def minimax(state, maximize, path=[], dfs_maximizing=False, max_depth=INF, heuri
         minEval = (INF, '', [])
 
         for child in children:
-            eval = minimax(child, True, path)
+            eval = minimax(child, True, path, dfs_maximizing, max_depth, heuristic_fn, alpha, beta)
+
             minEval = min(minEval, eval)
+
+            beta = min(beta, eval)
+            if beta[0] <= alpha[0]:
+                break
 
         minEval[2].insert(0, state)
 
@@ -249,7 +272,7 @@ def minimax_endgame_search(state, maximize=True) :
 # Uncomment the line below to try your minimax_endgame_search on an
 # AbstractGameState representing the ConnectFourBoard "NEARLY_OVER" from boards.py:
 
-pretty_print_dfs_type(minimax_endgame_search(state_NEARLY_OVER))
+# pretty_print_dfs_type(minimax_endgame_search(state_NEARLY_OVER))
 
 
 #### Part 3: Cutting off and Pruning search #############################################
@@ -281,19 +304,21 @@ def heuristic_connectfour(board, is_current_player_maximizer):
             minnum3 += 1
         elif len(c) == 2:
             minnum2 += 1
+
     if maxnum3 - minnum3 >= 2:  # check if maximizer has a large advantage (having more the 2 chains of three than min does)
         return 500
     elif 0 <= maxnum3 - minnum3 < 2:  # checking if they are relatively close
-        if maxnum2 - minnum2 >= 3:  # check if max has a small advantage (having more than 3 chains of three than min does)
+        if maxnum2 - minnum2 > 0:  # check if max has a small advantage (having more than 3 chains of three than min does)
             return 10
         elif maxnum3 == minnum3 and maxnum2 == minnum2:  # check if they are equal
             return 0
+        elif maxnum2 - minnum2 < 0:
+            return -10
 
     elif maxnum3 - minnum3 <= -2:  # check if min has more three length chains
         return -500
     else:  # last case (if min has a small advantage)
         return -10
-    
 
 ## Note that the signature of heuristic_fn is heuristic_fn(board, maximize=True)
 
@@ -328,7 +353,16 @@ def minimax_search_alphabeta(state, alpha=-INF, beta=INF, heuristic_fn=always_ze
      0. the best path (a list of AbstractGameState objects),
      1. the score of the leaf node (a number), and
      2. the number of static evaluations performed (a number)"""
-    raise NotImplementedError
+
+    global static_evaluations
+    static_evaluations = 0
+
+    global current_depth
+    current_depth = 0
+
+    score, state, path = minimax(state=state, maximize=maximize, max_depth=depth_limit, heuristic_fn=heuristic_fn, alpha=alpha, beta=beta)
+
+    return path, score, static_evaluations
 
 
 # Uncomment the line below to try minimax_search_alphabeta with "BOARD_UHOH" and
@@ -369,9 +403,10 @@ if not TEST_PROGRESSIVE_DEEPENING:
 # but the function must take these arguments (though it can certainly ignore them)
 # and must return an AnytimeValue.
 #
+
+
 def tournament_search(state, heuristic_fn=always_zero, depth_limit=INF,
                           maximize=True, time_limit=INF) :
     """Runs some kind of search (probably progressive deepening).
     Returns an AnytimeValue."""
     raise NotImplementedError
-
