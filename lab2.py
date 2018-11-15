@@ -6,7 +6,7 @@
 from game_api import *
 from boards import *
 from toytree import GAME1
-from time import time
+import time
 
 
 INF = float('inf')
@@ -156,10 +156,8 @@ def max(x, y):
     return x if x[0] >= y[0] else y
 
 static_evaluations = 0
-current_depth = 0
 
-def minimax(state, maximize, path=[], dfs_maximizing=False, max_depth=INF, heuristic_fn=None, alpha=(-INF, '', ''), beta=(INF, '', '')):
-    global current_depth
+def minimax(state, maximize, path=[], dfs_maximizing=False):
     global static_evaluations
 
     path = path.copy()
@@ -168,67 +166,40 @@ def minimax(state, maximize, path=[], dfs_maximizing=False, max_depth=INF, heuri
     if state.is_game_over():
         static_evaluations += 1
 
-        current_depth += 1
-
         # add state to path
         path.insert(0, state)
 
-        # if a heuristic function is given use it, if not use endgame score function
         evalutation = state.get_endgame_score()
 
         # return a tuple of the static evaluation, current state and a path to the state
         return evalutation, state, path
 
-    elif current_depth == max_depth:
-        static_evaluations += 1
-
-        current_depth += 1
-
-        # add state to path
-        path.insert(0, state)
-
-        # if a heuristic function is given use it, if not use endgame score function
-        evalutation = heuristic_fn(state.get_snapshot(), maximize)
-
-        # return a tuple of the static evaluation, current state and a path to the state
-        return evalutation, state, path
-
-
     # array of next states for maximize and minimize
     children = state.generate_next_states()
 
     """ 
-    (Min/Max)imize use tuples with the format: 
-       (score, state) to preserve the best state
+    (Min/Max)imize use tuples with the format: (score, state, path) 
     """
 
     # if dfs_maximizing: it is always maximizing
     if dfs_maximizing or maximize:
-        maxEval = (-INF, '', '')
+        maxEval = (-INF, 'Empty State', ['Empty Path'])
 
         for child in children:
-            eval = minimax(child, False, path, dfs_maximizing, max_depth, heuristic_fn, alpha, beta)
+            eval = minimax(child, False, path, dfs_maximizing)
             maxEval = max(maxEval, eval)
-
-            alpha = max(alpha, eval)
-            if beta[0] <= alpha[0]:
-                break
 
         maxEval[2].insert(0, state)
 
         return maxEval
 
     else:
-        minEval = (INF, '', [])
+        minEval = (INF, 'Empty State', ['Empty Path'])
 
         for child in children:
-            eval = minimax(child, True, path, dfs_maximizing, max_depth, heuristic_fn, alpha, beta)
+            eval = minimax(child, True, path, dfs_maximizing)
 
             minEval = min(minEval, eval)
-
-            beta = min(beta, eval)
-            if beta[0] <= alpha[0]:
-                break
 
         minEval[2].insert(0, state)
 
@@ -300,6 +271,76 @@ def heuristic_connectfour(board, is_current_player_maximizer):
     return c - o
 
 ## Note that the signature of heuristic_fn is heuristic_fn(board, maximize=True)
+current_depth = 0
+def minimax_alpha_beta(state, maximize, max_depth, heuristic_fn, path=[], alpha=(-INF, 'Empty State', ['Empty Path']), beta=(INF, 'Empty State', ['Empty Path'])):
+    global current_depth
+    global static_evaluations
+
+    path = path.copy()
+
+    # if game is over return a tuple with the score, current state
+    if state.is_game_over():
+        static_evaluations += 1
+        current_depth += 1
+
+        # add state to path
+        path.insert(0, state)
+
+        # if a heuristic function is given use it, if not use endgame score function
+        evalutation = state.get_endgame_score()
+
+        # return a tuple of the static evaluation, current state and a path to the state
+        return evalutation, state, path
+
+    elif current_depth == max_depth:
+        static_evaluations += 1
+        current_depth += 1
+
+        # add state to path
+        path.insert(0, state)
+
+        # if a heuristic function is given use it, if not use endgame score function
+        evalutation = heuristic_fn(state.get_snapshot(), maximize)
+
+        # return a tuple of the static evaluation, current state and a path to the state
+        return evalutation, state, path
+
+
+    # array of next states for maximize and minimize
+    children = state.generate_next_states()
+
+    """ 
+    (Min/Max)imize use tuples with the format: (score, state, path)
+    """
+
+    if maximize:
+        maxEval = (-INF, 'Empty State', ['Empty Path'])
+
+        for child in children:
+            eval = minimax(child, False, max_depth, heuristic_fn, path, alpha, beta)
+            maxEval = max(maxEval, eval)
+
+            alpha = max(alpha, eval)
+            if beta[0] <= alpha[0]:
+                break
+
+        maxEval[2].insert(0, state)
+        return maxEval
+
+    else:
+        minEval = (INF, '', [])
+
+        for child in children:
+            eval = minimax(child, True, max_depth, heuristic_fn, path, alpha, beta)
+
+            minEval = min(minEval, eval)
+
+            beta = min(beta, eval)
+            if beta[0] <= alpha[0]:
+                break
+
+        minEval[2].insert(0, state)
+        return minEval
 
 def minimax_search(state, heuristic_fn=always_zero, depth_limit=INF, maximize=True) :
     """Performs h-minimax, cutting off search at depth_limit and using heuristic_fn
@@ -326,7 +367,7 @@ def minimax_search(state, heuristic_fn=always_zero, depth_limit=INF, maximize=Tr
 # pretty_print_dfs_type(minimax_search(state_UHOH, heuristic_fn=heuristic_connectfour, depth_limit=2))
 
 def minimax_search_alphabeta(state, alpha=-INF, beta=INF, heuristic_fn=always_zero,
-                             depth_limit=INF, maximize=True) :
+                             depth_limit=INF, maximize=True, time_limit=None) :
     """"Performs minimax with alpha-beta pruning. 
     Same return type as dfs_maximizing, a tuple containing:
      0. the best path (a list of AbstractGameState objects),
@@ -339,8 +380,7 @@ def minimax_search_alphabeta(state, alpha=-INF, beta=INF, heuristic_fn=always_ze
     global current_depth
     current_depth = 0
 
-    score, state, path = minimax(state=state, maximize=maximize, max_depth=depth_limit, heuristic_fn=heuristic_fn, alpha=alpha, beta=beta)
-
+    score, state, path = minimax(state=state, maximize=maximize, max_depth=depth_limit, heuristic_fn=heuristic_fn, alpha=alpha, beta=beta, progressive_deepening=(time_limit, maximize))
     return path, score, static_evaluations
 
 
@@ -350,13 +390,100 @@ def minimax_search_alphabeta(state, alpha=-INF, beta=INF, heuristic_fn=always_ze
 
 # pretty_print_dfs_type(minimax_search_alphabeta(state_UHOH, heuristic_fn=heuristic_connectfour, depth_limit=4))
 
+anytime_value = ()
+
+def minimax_progressive_deepening(state, maximize, max_depth, heuristic_fn, start_time, time_limit, path=[], alpha=(-INF, 'Empty State', ['Empty Path']), beta=(INF, 'Empty State', ['Empty Path'])):
+    global current_depth
+    global static_evaluations
+    global anytime_value
+
+    path = path.copy()
+
+    # if game is over return a tuple with the score, current state
+    if state.is_game_over():
+        static_evaluations += 1
+        current_depth += 1
+
+        # add state to path
+        path.insert(0, state)
+
+        # if a heuristic function is given use it, if not use endgame score function
+        evalutation = state.get_endgame_score()
+
+        # return a tuple of the static evaluation, current state and a path to the state
+        return evalutation, state, path
+
+    elif current_depth == max_depth:
+        static_evaluations += 1
+        current_depth += 1
+
+        # add state to path
+        path.insert(0, state)
+
+        # if a heuristic function is given use it, if not use endgame score function
+        evalutation = heuristic_fn(state.get_snapshot(), maximize)
+
+        # return a tuple of the static evaluation, current state and a path to the state
+        return evalutation, state, path
+
+
+    # array of next states for maximize and minimize
+    children = state.generate_next_states()
+
+    """ 
+    (Min/Max)imize use tuples with the format: (score, state, path)
+    """
+
+    if maximize:
+        maxEval = (-INF, 'Empty State', ['Empty Path'])
+
+        for child in children:
+            if time.time() - start_time >= time_limit:
+                break
+
+            eval = minimax(child, False, max_depth, heuristic_fn, start_time, time_limit, path, alpha, beta)
+            maxEval = max(maxEval, eval)
+
+            alpha = max(alpha, eval)
+            if beta[0] <= alpha[0]:
+                break
+
+
+        maxEval[2].insert(0, state)
+        return maxEval
+
+    else:
+        minEval = (INF, '', [])
+
+        for child in children:
+            if time.time() - start_time >= time_limit:
+                break
+
+            eval = minimax(child, True, max_depth, heuristic_fn, start_time, time_limit, path, alpha, beta)
+
+            minEval = min(minEval, eval)
+
+            beta = min(beta, eval)
+            if beta[0] <= alpha[0]:
+                break
+
+        minEval[2].insert(0, state)
+        return minEval
 
 def progressive_deepening(state, heuristic_fn=always_zero, depth_limit=INF,
                           maximize=True, time_limit=INF) :
     """Runs minimax with alpha-beta pruning. At each level, updates anytime_value
     with the tuple returned from minimax_search_alphabeta. 
     Returns anytime_value."""
-    raise NotImplementedError
+
+    global static_evaluations
+    static_evaluations = 0
+
+    global current_depth
+    current_depth = 0
+
+    score, state, path = minimax_progressive_deepening(state, maximize, depth_limit, heuristic_fn, time.time(), time_limit)
+    return path, score, static_evaluations
 
 
 # Uncomment the line below to try progressive_deepening with "BOARD_UHOH" and
