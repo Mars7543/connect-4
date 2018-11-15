@@ -114,7 +114,8 @@ def endgame_score_connectfour_faster(board, is_current_player_maximizer):
             leftOver = numPieces - 4 # find how many extra moves they did other than the necessary moves needed to win
             for i in range(0,leftOver):
                 maxPoints = maxPoints - 5 # subtract 5 points for every extra move
-
+            if(is_current_player_maximizer):
+                return -1 * maxPoints
             return maxPoints
     return 0
 
@@ -281,44 +282,22 @@ def heuristic_connectfour(board, is_current_player_maximizer):
     """Given a non-endgame board, returns a heuristic score with
     abs(score) < 1000, where higher numbers indicate that the board is better
     for the maximizer."""
-    maxchains = []  # list of max chains
-    minchains = []  # list of min chains
-    maxnum3 = 0
-    maxnum2 = 0
-    minnum3 = 0
-    minnum2 = 0
-    if is_current_player_maximizer:  # Set lists accordingly
-        maxchains = board.get_all_chains(is_current_player_maximizer)
-        minchains = board.get_all_chains(not is_current_player_maximizer)
-    else:
-        maxchains = board.get_all_chains(not is_current_player_maximizer)
-        minchains = board.get_all_chains(is_current_player_maximizer)
 
-    for c in maxchains:  # increment maximizer variables based on chains
-        if len(c) == 3:
-            maxnum3 += 1
-        elif len(c) == 2:
-            maxnum2 += 1
-    for c in minchains:  # increment minimizer variables based on chains
-        if len(c) == 3:
-            minnum3 += 1
-        elif len(c) == 2:
-            minnum2 += 1
+    curplayer = board.get_all_chains(is_current_player_maximizer) #gets the maximizers
+    opplayer = board.get_all_chains(not is_current_player_maximizer)
+    c = o = 0
 
-    if maxnum3 - minnum3 >= 2:  # check if maximizer has a large advantage (having more the 2 chains of three than min does)
-        return 500
-    elif 0 <= maxnum3 - minnum3 < 2:  # checking if they are relatively close
-        if maxnum2 - minnum2 > 0:  # check if max has a small advantage (having more than 3 chains of three than min does)
-            return 10
-        elif maxnum3 == minnum3 and maxnum2 == minnum2:  # check if they are equal
-            return 0
-        elif maxnum2 - minnum2 < 0:
-            return -10
-
-    elif maxnum3 - minnum3 <= -2:  # check if min has more three length chains
-        return -500
-    else:  # last case (if min has a small advantage)
-        return -10
+    for chain in curplayer:
+        if len(chain) == 3:
+            c += 50
+        elif len(chain) == 2:
+            c += 10
+    for chain in opplayer:
+        if len(chain) == 3:
+            o += 50
+        elif len(chain) == 2:
+            o += 10
+    return c - o
 
 ## Note that the signature of heuristic_fn is heuristic_fn(board, maximize=True)
 
